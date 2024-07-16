@@ -143,7 +143,7 @@ class SectionInfo(FeatureType):
             return {"entry": "", "sections": []}
 
         # properties of entry point, or if invalid, the first executable section
-        not_found_error_class = lief.lief_errors.not_found if not lief.__version__.startswith("0.9.0") else lief.not_found
+        not_found_error_class = RuntimeError if not lief.__version__.startswith("0.9.0") else lief.not_found
         try:
             if int(LIEF_MAJOR) > 0 or (int(LIEF_MAJOR) == 0 and int(LIEF_MINOR) >= 12):
                 section = lief_binary.section_from_rva(lief_binary.entrypoint - lief_binary.imagebase)
@@ -156,8 +156,9 @@ class SectionInfo(FeatureType):
         except not_found_error_class:
             # bad entry point, let's find the first executable section
             entry_section = ""
+            mem_execute_characteristics = lief.PE.SECTION_CHARACTERISTICS.MEM_EXECUTE if lief.__version__.startswith("0.9.0") else lief.PE.Section.CHARACTERISTICS.MEM_EXECUTE
             for s in lief_binary.sections:
-                if lief.PE.SECTION_CHARACTERISTICS.MEM_EXECUTE in s.characteristics_lists:
+                if mem_execute_characteristics in s.characteristics_lists:
                     entry_section = s.name
                     break
 
