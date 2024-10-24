@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
+import warnings
+import errno
 import json
 import tqdm
 import numpy as np
@@ -22,6 +25,19 @@ def raw_feature_iterator(file_paths):
             for line in fin:
                 yield line
 
+def find_jsonl_files(data_dir):
+    return [file for file in os.listdir(data_dir) if file.endswith(".jsonl")]
+
+def raw_feature_path_iterator(data_dir, is_test=False):
+    """
+    Yield raw feature file paths in given data directory
+    """
+    filenames = find_jsonl_files(data_dir)
+    for filename in filenames:
+        if is_test and "test" in filename:
+            yield os.path.join(data_dir, filename)
+        elif "train" in filename:
+            yield os.path.join(data_dir, filename)
 
 def vectorize(irow, raw_features_string, X_path, y_path, extractor, nrows):
     """
@@ -61,7 +77,7 @@ def vectorize_subset(X_path, y_path, raw_feature_paths, extractor, nrows):
         pass
 
 
-def create_vectorized_features(data_dir, feature_version=2):
+def create_vectorized_features(data_dir, feature_version=2, train_feature_paths=[], test_feature_paths=[]):
     """
     Create feature vectors from raw features and write them to disk
     """
@@ -70,14 +86,14 @@ def create_vectorized_features(data_dir, feature_version=2):
     print("Vectorizing training set")
     X_path = os.path.join(data_dir, "X_train.dat")
     y_path = os.path.join(data_dir, "y_train.dat")
-    raw_feature_paths = [os.path.join(data_dir, "train_features_{}.jsonl".format(i)) for i in range(6)]
+    raw_feature_paths = list(raw_feature_path_iterator(data_dir)) if not len(train_feature_paths) else train_feature_paths
     nrows = sum([1 for fp in raw_feature_paths for line in open(fp)])
     vectorize_subset(X_path, y_path, raw_feature_paths, extractor, nrows)
 
     print("Vectorizing test set")
     X_path = os.path.join(data_dir, "X_test.dat")
     y_path = os.path.join(data_dir, "y_test.dat")
-    raw_feature_paths = [os.path.join(data_dir, "test_features.jsonl")]
+    raw_feature_paths = list(raw_feature_path_iterator(data_dir, is_test=True)) if not len(test_feature_paths) else test_feature_paths
     nrows = sum([1 for fp in raw_feature_paths for line in open(fp)])
     vectorize_subset(X_path, y_path, raw_feature_paths, extractor, nrows)
 
