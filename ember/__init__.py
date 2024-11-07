@@ -36,7 +36,7 @@ def raw_feature_path_iterator(data_dir, is_test=False):
     for filename in filenames:
         if is_test and "test" in filename:
             yield os.path.join(data_dir, filename)
-        elif "train" in filename:
+        if not is_test and "train" in filename:
             yield os.path.join(data_dir, filename)
 
 def vectorize(irow, raw_features_string, X_path, y_path, extractor, nrows):
